@@ -15,13 +15,13 @@ class CurrencyConvertor:
     Class for currency convert API service: https://free.currconv.com/api/v7/convert
     """
 
+    available_currencies = ('RUB', 'EUR', 'USD', 'GBP', 'AUD', 'JPY')
+
     @staticmethod
     def get_price(base: str, quote: str, amount: str) -> str:
 
-        available_currencies = ('RUB', 'EUR', 'USD', 'GBP', 'AUD', 'JPY')
-
-        if any([base.upper() not in available_currencies, quote.upper() not in available_currencies]):
-            raise APIException(f'Base or quote currency not int available currencies: {available_currencies}')
+        if any([base.upper() not in CurrencyConvertor.available_currencies, quote.upper() not in CurrencyConvertor.available_currencies]):
+            raise APIException(f'Base or quote currency not int available currencies: {CurrencyConvertor.available_currencies}')
 
         try:
             amount = float(amount.replace(',', '.'))
@@ -70,6 +70,7 @@ class TelegramBot:
         else:
             self._bot.register_message_handler(self.start, commands=['start'])
             self._bot.register_message_handler(self.help, commands=['help'])
+            self._bot.register_message_handler(self.values, commands=['values'])
             self._bot.register_message_handler(self.parser, content_types=['text'])
 
         self._bot.infinity_polling()
@@ -81,8 +82,13 @@ class TelegramBot:
         help_msg = 'Send: convert <amount_base> <base_currency> <quote_currency>\n' \
                    'Example: convert 100 USD RUB\n' \
                    'Result: 7070.0 RUB\n' \
-                   ''
+                   '\n' \
+                   'Send: /values for view all available currencies'
+
         self._bot.send_message(message.chat.id, f"{help_msg}")
+
+    def values(self, message):
+        self._bot.send_message(message.chat.id, f"Available currencies: {CurrencyConvertor.available_currencies}")
 
     def parser(self, message):
         try:
