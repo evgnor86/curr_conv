@@ -55,7 +55,7 @@ class TelegramBot:
     Class for Telegram bot service
 
     Note:
-    With class-based notations don't work @<bot_object>.<handler>
+    With class-based notation don't work @<bot_object>.<handler>
     I'm use <bot_object>.register_<handler> as alternative
     """
     def __init__(self):
