@@ -1,5 +1,6 @@
 import json
 import requests
+import telebot
 
 import config
 
@@ -10,6 +11,9 @@ class APIException(Exception):
 
 
 class CurrencyConvertor:
+    """
+    Class for currency convert API service: https://free.currconv.com/api/v7/convert
+    """
 
     @staticmethod
     def get_price(base: str, quote: str, amount: str) -> str:
@@ -44,3 +48,57 @@ class CurrencyConvertor:
                     return f'{response * amount}'
             else:
                 raise APIException(f'Something wrong, API response code is {api_result.status_code}')
+
+
+class TelegramBot:
+    """
+    Class for Telegram bot service
+
+    Note:
+    With class-based notations don't work @<bot_object>.<handler>
+    I'm use <bot_object>.register_<handler> as alternative
+    """
+    def __init__(self):
+        self._bot_name = config.TELEGRAM_BOT_NAME
+        self._token = config.TELEGRAM_BOT_TOKEN
+        self._bot = None
+
+        try:
+            self._bot = telebot.TeleBot(self._token)
+        except Exception as e:
+            raise APIException('Something wrong... {e.message}')
+        else:
+            self._bot.register_message_handler(self.start, commands=['start'])
+            self._bot.register_message_handler(self.help, commands=['help'])
+            self._bot.register_message_handler(self.parser, content_types=['text'])
+
+        self._bot.infinity_polling()
+
+    def start(self, message):
+        self._bot.send_message(message.chat.id, f"Welcome, {message.chat.username} \nSend /help for usage help")
+
+    def help(self, message):
+        help_msg = 'Send: convert <amount_base> <base_currency> <quote_currency>\n' \
+                   'Example: convert 100 USD RUB\n' \
+                   'Result: 7070.0 RUB\n' \
+                   ''
+        self._bot.send_message(message.chat.id, f"{help_msg}")
+
+    def parser(self, message):
+        try:
+            result = ''
+            command, amount, base, quote = message.text.split()
+
+            if command == 'convert':
+                # result = quote of base * amount
+                result = CurrencyConvertor.get_price(base=base, quote=quote, amount=amount)
+                result = f"Result: {result} {quote}"
+            else:
+                result = 'Wrong input, send /help for usage help'
+
+        except APIException as e:
+            print(f'{e}')
+            self._bot.send_message(message.chat.id, f"Error: {e}")
+
+        else:
+            self._bot.send_message(message.chat.id, result)
